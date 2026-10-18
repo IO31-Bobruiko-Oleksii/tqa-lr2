@@ -1,0 +1,46 @@
+    1  date
+    2  whoami
+    3  wireshark --version | head -n 1
+    4  sudo ip netns add host
+    5  sudo ip netns add peer
+    6  sudo ip link add veth0 type veth peer name veth1
+    7  sudo ip link set veth0 netns host
+    8  sudo ip link set veth1 netns peer
+    9  sudo ip -n host address add 192.168.31.1/24 dev veth0
+   10  sudo ip -n peer address add 192.168.31.2/24 dev veth1
+   11  sudo ip -n host link set lo up
+   12  sudo ip -n peer link set lo up
+   13  sudo ip -n host link set veth0 up
+   14  sudo ip -n peer link set veth1 up
+   15  sudo ip -n host -br address
+   16  sudo ip -n peer -br address
+   17  sudo ip -n host -br link
+   18  sudo ip -n peer -br link
+   19  HOST_MAC=$(sudo ip netns exec host cat /sys/class/net/veth0/address)
+   20  PEER_MAC=$(sudo ip netns exec peer cat /sys/class/net/veth1/address)
+   21  printf 'Host MAC: %s\nPeer MAC: %s\n' "$HOST_MAC" "$PEER_MAC"
+   22  sudo ip -n host neigh flush dev veth0
+   23  sudo ip -n peer neigh flush dev veth1
+   24  sudo ip netns exec host arp -n
+   25  sudo ip netns exec peer arp -n
+   26  sudo ip netns exec host dumpcap -q -i veth0 -f 'arp or icmp' -c 8 -w - > arp-dynamic.pcapng 2> arp-dynamic.log &
+   27  sudo ip netns exec host ping -c 3 192.168.31.2
+   28  cat arp-dynamic.log
+   29  sudo ip -n host neigh show
+   30  sudo ip -n peer neigh show
+   31  sudo ip netns exec host arp -n
+   32  sudo ip netns exec peer arp -n
+   33  sudo ip -n host neigh replace 192.168.31.2 lladdr "$PEER_MAC" nud permanent dev veth0
+   34  sudo ip -n peer neigh replace 192.168.31.1 lladdr "$HOST_MAC" nud permanent dev veth1
+   35  sudo ip -n host neigh show
+   36  sudo ip -n peer neigh show
+   37  sudo ip netns exec host arp -n
+   38  sudo ip netns exec peer arp -n
+   39  sudo ip netns exec host dumpcap -q -i veth0 -f 'arp or icmp' -c 6 -w - > arp-static.pcapng 2> arp-static.log &
+   40  sudo ip netns exec host ping -c 3 192.168.31.2
+   41  cat arp-static.log
+   42  sudo ip -n host neigh show
+   43  sudo ip -n peer neigh show
+   44  sudo ip netns exec host arp -n
+   45  sudo ip netns exec peer arp -n
+   46  history > history-arp.txt

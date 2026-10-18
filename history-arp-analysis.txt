@@ -1,0 +1,10 @@
+    1  tshark -r arp-dynamic.pcapng -n
+    2  tshark -r arp-dynamic.pcapng -Y arp -T fields -e frame.number -e arp.opcode -e arp.src.proto_ipv4 -e arp.src.hw_mac -e arp.dst.proto_ipv4 -e arp.dst.hw_mac
+    3  tshark -r arp-static.pcapng -n
+    4  printf 'ARP packets: %s\n' "$(tshark -r arp-static.pcapng -Y arp -T fields -e frame.number | wc -l)"
+    5  printf 'ICMP requests: %s\n' "$(tshark -r arp-static.pcapng -Y 'icmp.type == 8' -T fields -e frame.number | wc -l)"
+    6  printf 'ICMP replies: %s\n' "$(tshark -r arp-static.pcapng -Y 'icmp.type == 0' -T fields -e frame.number | wc -l)"
+    7  capinfos -c arp-dynamic.pcapng arp-static.pcapng
+    8  wireshark -r arp-dynamic.pcapng -Y 'arp or icmp' > /tmp/wireshark-dynamic.log 2>&1 &
+    9  wireshark -r arp-static.pcapng -Y 'arp or icmp' > /tmp/wireshark-static.log 2>&1 &
+   10  history > history-arp-analysis.txt
